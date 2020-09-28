@@ -9,6 +9,7 @@ import numpy as np
 import re
 
 
+#load data
 if not bpy.data.collections.get('shapes'):
     
     #create collection to store shapes
@@ -16,24 +17,29 @@ if not bpy.data.collections.get('shapes'):
     bpy.context.scene.collection.children.link(collection)
     c_ix =  [i+1 for i in range(len(bpy.data.collections)) if bpy.data.collections[i].name =='shapes'][0]
     
-    #load shapes
-    files = glob(r'./shapes/*.shp')
-    for f in files:
+    #loop over shapefiles
+
+    for f in glob(r'./shapes/*.shp'):
         fname = f.split('\\')[-1].split('.')[0]
-        bpy.ops.importgis.shapefile(filepath=f,shpCRS='EPSG:28992',
-                                    separateObjects=False,
-                                    fieldExtrudeName='roof-0.99')
-                                    
-        #set object z location and scale to 0                            
-        bpy.context.object.location.z = 0
-        bpy.ops.transform.resize(value=(1, 1, 0), 
-                                orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), 
-                                orient_matrix_type='GLOBAL', constraint_axis=(False, False, True), mirror=True, 
-                                use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, 
-                                use_proportional_connected=False, use_proportional_projected=False)
-        #move object to collection
-        bpy.ops.object.move_to_collection(collection_index=c_ix)
-            
+        if fname !='buildings':
+            bpy.ops.importgis.shapefile(filepath=f,shpCRS='EPSG:28992',
+                                        separateObjects=False,
+                                        fieldExtrudeName='roof-0.99')
+                             
+            #set object z location and scale to 0                            
+            bpy.context.object.location.z = 0
+            bpy.ops.transform.resize(value=(1, 1, 0), 
+                                    orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), 
+                                    orient_matrix_type='GLOBAL', constraint_axis=(False, False, True), mirror=True, 
+                                    use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, 
+                                    use_proportional_connected=False, use_proportional_projected=False)        #move object to collection
+            bpy.ops.object.move_to_collection(collection_index=c_ix)
+    
+#    #add ancillary shapefiles (e.g. roads, waterways, trees, etc.)
+#    for f in glob(r'./*.shp'):
+#            bpy.ops.importgis.shapefile(filepath=f,shpCRS='EPSG:28992',separateObjects=False)
+#            bpy.context.object.location.z = 0
+        
         
 #get colorramp and sort colors based on symbol names
 fcmap = r'E:\blender_spatial\projects\erasmusbrug_rotterdam\style_erasmusbrug.qml'
@@ -53,12 +59,11 @@ start_frame = 0
 step = 2
 
 for obj in bpy.data.collections.get('shapes').all_objects:
-    
     #assign princinpled BSDF material and color
     if not bpy.data.objects[obj.name].active_material:
         mat = bpy.data.materials.new(f'mat_{obj.name}')
-        bpy.data.objects[obj.name].active_material.use_nodes = True
-        bpy.data.objects[obj.name].active_material.node_tree.nodes["Principled BSDF"].inputs[0].default_value = colors[obj.name]
+        mat.diffuse_color = colors[obj.name]
+        bpy.data.objects[obj.name].active_material = mat
 
     #add keyframe
     obj.keyframe_insert(data_path="scale",frame=start_frame)
